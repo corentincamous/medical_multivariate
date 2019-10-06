@@ -28,8 +28,6 @@ descriptive_statistic <- function(df_var, nums_var = '.', by_var = ''){
   return(as.data.frame(summary(tableone, title = paste('Descriptive Statistics by', by_var, sep =' ')), text = TRUE))
   }
 
-
-#TODO : example to be specified
 #' Provide a univariate analysis given a data frame an a target variable.
 #' 
 #' @param df_var data frame to be processed.
@@ -37,9 +35,10 @@ descriptive_statistic <- function(df_var, nums_var = '.', by_var = ''){
 #' @return a table summarizing univariate analysis of the data frame with coefficient, sdev, t-stat, p-value, odds ratio and its 95% CI.
 #' @examples
 #' library("gapminder")
-#' univariate_analysis(gapminder,)
+#' univariate_analysis(gapminder,by_var = 'gdpPercap')
 univariate_analysis <- function(df_var, by_var){
   for (col in colnames(df_var)){
+    print(col)
     f <- as.formula(paste(by_var, col, sep = " ~ "))
     model1 <- glm(f, data = df_var, family = 'binomial')
     model1_sum <- summary(model1)
@@ -61,27 +60,28 @@ univariate_analysis <- function(df_var, by_var){
 #' 
 #' @param df_var data frame to be processed.
 #' @param x_variables a list indicating the variables for multivariate analysis (can be flagged from univariate analysis).
+#' @param scope_variables a list indicating the variables on which the multivariate analysis will be done.
 #' @param by_var  indicates variable on which the multivariate analysis will be done.
 #' @return a table summarizing univariate analysis of the data frame with coefficient, sdev, t-stat, p-value, odds ratio and its 95% CI.
 #' @examples
 #' library("gapminder")
 #' univariate_analysis(gapminder,)
-multivariate_analysis_model <- function(df_var, by_var, x_variables){
-  f <- as.formula(paste(by_var, paste(x_variables, collapse = " + "), sep = " ~ "))
-  model1 <- glm(f, data = df_var, family = 'binomial')
+multivariate_analysis_model <- function(df_var, by_var, x_variables, scope_variables){
+  f <- as.formula(paste(by_var, paste(intersect(x_variables, scope_variables), collapse = " + "), sep = " ~ "))
+  df_var2 <- df_var[,scope_variables]
+  model1 <- glm(f, data = df_var2, family = 'binomial')
   stepw <- step(model,direction = "both")
   return(stepw)
 }
 
 #' Provides the coefficients estimates and statistics for a model (multivariate_analysis_model output) 
 #' 
-#' @param df_var data frame to be processed.
 #' @param model model to be processed.
 #' @return a table summarizing multivariate analysis of the data frame with coefficient, sd error, z value, p-value, odds ratio and its 95% CI.
 #' @examples
 #' library("gapminder")
 #' univariate_analysis(gapminder,)
-multivariate_analysis_summary <- function(df_var, model){
+multivariate_analysis_summary <- function(model){
   stepw_summary <- summary(model)
   table_model1 <- as.data.frame(stepw_summary$coefficients)
   table_model2 <- as.data.frame(exp(cbind("Odds ratio" = coef(model), confint.default(stepw, level = 0.95))))
@@ -91,13 +91,12 @@ multivariate_analysis_summary <- function(df_var, model){
 
 #' Provides the ROC curve for a model (multivariate_analysis_model output) 
 #' 
-#' @param df_var data frame to be processed.
 #' @param model model to be processed.
 #' @return a data frame with one column with different thresholds tested, an other column with sensitivity and an other with specificity
 #' @examples
 #' library("gapminder")
 #' univariate_analysis(gapminder,)
-multivariate_analysis_ROC <- function(df_var, model){
+multivariate_analysis_ROC <- function(model){
   threshold_list=seq(0, 1, by=0.01)
   table_roc <- data.frame(Threshold=numeric(),
                           specificity = numeric(), 
